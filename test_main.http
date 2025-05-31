@@ -1,0 +1,14 @@
+### Health Check Endpoint
+GET http://localhost:8000/health
+Accept: application/json
+
+### Upload PDF File Endpoint
+POST http://localhost:8000/pdf_upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="example.pdf"
+Content-Type: application/pdf
+
+< ./example.pdf
+--boundary--

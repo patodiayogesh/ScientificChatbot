@@ -1,0 +1,13 @@
+[project]
+name = "scientificchatbot"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = "==3.12.*"
+dependencies = [
+    "fastapi>=0.115.12",
+    "uvicorn>=0.34.2",
+    "google-genai",
+    "python-multipart",
+    "pydantic",
+    "pydantic-settings"
+]
