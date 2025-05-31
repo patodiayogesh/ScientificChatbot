@@ -39,7 +39,7 @@ class PdfFileProcessor:
             content = await file.read()
             with open(pdf_path, 'wb') as f:
                 f.write(content)
-            return [str(pdf_path)]
+            return [pdf_path]
         except Exception as e:
             logger.error(f"Error saving PDF file: {e}")
             raise e
@@ -62,7 +62,7 @@ class PdfFileProcessor:
                 zip_ref.extractall(self.save_dir)
             for file in zip_ref.namelist():
                 if file.endswith('.pdf'):
-                    extracted_files.append(str(self.save_dir / file))
+                    extracted_files.append(self.save_dir / file)
                 else:
                     raise ValueError(f"The zip file contains non-PDF files. Only PDF files are allowed. Filename: {file}")
             return extracted_files

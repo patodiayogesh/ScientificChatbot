@@ -9,5 +9,6 @@ dependencies = [
     "google-genai",
     "python-multipart",
     "pydantic",
-    "pydantic-settings"
+    "pydantic-settings",
+    "PyYaml",
 ]

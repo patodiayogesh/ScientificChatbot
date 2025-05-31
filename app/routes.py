@@ -9,6 +9,7 @@ from fastapi import (
 )
 
 from app.services.file_processor import PdfFileProcessor
+from app.services.pdf_information_extraction_service import PdfInformationExtractionService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -33,14 +34,19 @@ async def pdf_upload(file: UploadFile = File(...)):
             logger.error("No file uploaded.")
             raise HTTPException(status_code=400, detail="No file uploaded.")
 
-        print(file, file.filename, file.content_type)
 
         if not (file.filename.endswith('.pdf') or file.filename.endswith('.zip')):
             logger.error("Invalid file type uploaded.")
             raise HTTPException(status_code=400, detail="Only .pdf or .zip files are allowed.")
         # Process the file using PdfFileProcessor
         logger.info(f"Processing file: {file}")
-        response = await PdfFileProcessor().process(file)
+        new_uploaded_files = await PdfFileProcessor().process(file)
+
+        # Extract information using InformationExtractionModelService
+        logger.info("Extracting information from the uploaded file(s).")
+        extraction_model_service = PdfInformationExtractionService()
+        logger.info(new_uploaded_files)
+        response = extraction_model_service.execute(new_uploaded_files[0])
 
         return {"File(s) saved successfully. Extraction running in background": response}
     except Exception as e:

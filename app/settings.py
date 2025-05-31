@@ -11,6 +11,9 @@ class Settings(BaseSettings):
 
     EXTRACTED_FILES_DIR: str = "extracted_files"
 
+    INFORMATION_EXTRACTION_MODEL: str = "gemini-2.0-flash"
+    INFORMATION_EXTRACTION_PROMPT_FILE_PATH: str = "prompts/information_extraction.yaml"
+
     API_KEY: str
 
 @lru_cache

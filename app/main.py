@@ -9,6 +9,15 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from app.routes import router
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Set the log level (e.g., DEBUG, INFO, WARNING, ERROR)
+    format="%(name)s - %(levelname)s - %(message)s",  # Log format
+    handlers=[
+        logging.StreamHandler()  # Output logs to the terminal
+    ]
+)
+
 logger = logging.getLogger(__name__)
 app = FastAPI(
     title = "Scientific Chatbot",
