@@ -2,3 +2,4 @@
 .idea*
 .DS_Store
 *.pyc
+google_service_key.json

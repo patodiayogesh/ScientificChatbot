@@ -10,6 +10,7 @@ from fastapi import (
 
 from app.services.upload_pdf_service import UploadPdfService
 from app.services.pdf_information_extraction_service import PdfInformationExtractionService
+from app.services.db_service import get_firebase_db, DatabaseService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -45,6 +46,10 @@ def pdf_upload(file: UploadFile = File(...)):
         # Process the uploaded files
         pdf_information_extraction_service = PdfInformationExtractionService()
         extracted_data = pdf_information_extraction_service.run(new_uploaded_files)
+
+        # Add the extracted data to the database
+        db_service = DatabaseService()
+        db_service.add_documents(extracted_data)
 
         return extracted_data
     except Exception as e:

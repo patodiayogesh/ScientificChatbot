@@ -4,10 +4,15 @@ import uvicorn
 
 from fastapi import FastAPI
 from pathlib import Path
+import firebase_admin
+from firebase_admin import credentials
 
 sys.path.append(str(Path(__file__).parent.parent))
 
 from app.routes import router
+from app.settings import get_settings
+
+settings = get_settings()
 
 # Configure logging
 logging.basicConfig(
@@ -24,6 +29,7 @@ app = FastAPI(
     summary = "An AI-powered chatbot for scientific queries",
 )
 app.include_router(router)
+
 
 if __name__ == '__main__':
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

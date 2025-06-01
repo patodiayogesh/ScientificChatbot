@@ -1,4 +1,5 @@
 from functools import lru_cache
+import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -15,6 +16,8 @@ class Settings(BaseSettings):
     INFORMATION_EXTRACTION_PROMPT_FILE_PATH: str = "prompts/information_extraction.yaml"
 
     API_KEY: str
+    GOOGLE_APPLICATION_CREDENTIALS: str
+    FIREBASE_COLLECTION_NAME: str
 
 @lru_cache
 def get_settings() -> Settings:
@@ -24,3 +27,6 @@ def get_settings() -> Settings:
     :return: Settings instance with loaded environment variables.
     """
     return Settings()
+
+def load_env():
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = get_settings().GOOGLE_APPLICATION_CREDENTIALS

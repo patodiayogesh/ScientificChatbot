@@ -27,6 +27,26 @@ class PdfInformationExtractionService:
         self.pdf_information_recipe = PdfInformationRecipe  # Using the recipe for structured information extraction
         self.pdf_reader = InformationExtractionModelService()  # Using the model service for extraction
 
+    def modify_recipe_format(self, recipe_data: dict) -> dict:
+        """
+        Modifies the recipe data format to match the expected structure.
+        :param recipe_data: The raw recipe data extracted from the PDF.
+        :return: Modified recipe data in the expected format.
+        """
+        # This function can be customized based on how the raw data needs to be transformed.
+        # For now, we assume that the data is already in the correct format.
+        try:
+            new_recipe_format = {}
+            for key, value in recipe_data.items():
+                if key == "metadata":
+                    for metadata_key, metadata_value in value.model_dump().items():
+                            new_recipe_format[metadata_key] = metadata_value
+                else:
+                    new_recipe_format[key] = value
+            return new_recipe_format
+        except Exception as e:
+            logger.error(f"Error modifying recipe format: {e}")
+            raise ValueError("Invalid recipe data format. Please check the extracted data format.")
 
     async def execute(self, file_path: Path) -> PdfInformationRecipe:
         """
@@ -50,11 +70,15 @@ class PdfInformationExtractionService:
         except Exception as e:
             logger.error(f"Error extracting complete information from PDF: {e}")
         finally:
-            if recipe_data:
-                extracted_pdf_information = PdfInformationRecipe.model_construct(**recipe_data)
-                return extracted_pdf_information
-            else:
+            if not recipe_data:
                 raise Exception("No information extracted from the PDF file.")
+            if "metadata" not in recipe_data:
+                raise Exception("Metadata extraction failed. Please check the PDF file format or content.")
+            new_recipe_data = self.modify_recipe_format(recipe_data)
+            extracted_pdf_information = PdfInformationRecipe.model_construct(**new_recipe_data)
+            return extracted_pdf_information
+
+
 
     async def aexecute(self, file_path: Path):
         """

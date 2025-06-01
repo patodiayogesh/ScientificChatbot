@@ -34,6 +34,11 @@ class PdfMetaDataRecipe(BaseModel):
     abstract: str
 
 class PdfInformationRecipe(BaseModel):
-    metadata: PdfMetaDataRecipe
+    title: str
+    authors: list[str]
+    publication_date: str
+    abstract: str
     content_data: PdfContentDataRecipe
     tables_and_figures: TablesAndFiguresRecipe
+
+
