@@ -8,7 +8,7 @@ from fastapi import (
     File,
 )
 
-from app.services.file_processor import PdfFileProcessor
+from app.services.file_processor import UploadPdfService
 from app.services.pdf_information_extraction_service import PdfInformationExtractionService
 
 router = APIRouter()
@@ -23,32 +23,32 @@ def health_check():
     return {"status": "ok"}
 
 @router.post("/pdf_upload")
-async def pdf_upload(file: UploadFile = File(...)):
+def pdf_upload(file: UploadFile = File(...)):
     """
     Endpoint to upload a PDF file or Zipped Pdf files.
     """
     try:
-        # check if the file is provided
-        logger.info("Received file upload request.", file)
+        logger.info("Received file upload request.")
         if not file:
             logger.error("No file uploaded.")
             raise HTTPException(status_code=400, detail="No file uploaded.")
-
-
         if not (file.filename.endswith('.pdf') or file.filename.endswith('.zip')):
             logger.error("Invalid file type uploaded.")
             raise HTTPException(status_code=400, detail="Only .pdf or .zip files are allowed.")
-        # Process the file using PdfFileProcessor
-        logger.info(f"Processing file: {file}")
-        new_uploaded_files = await PdfFileProcessor().process(file)
+
+        new_uploaded_files = UploadPdfService().upload(file)
+        if new_uploaded_files is None or len(new_uploaded_files) == 0:
+            logger.error("No valid PDF files found in the uploaded file.")
+            raise ValueError("No valid PDF files found in the uploaded file.")
+
+
 
         # Extract information using InformationExtractionModelService
-        logger.info("Extracting information from the uploaded file(s).")
-        extraction_model_service = PdfInformationExtractionService()
-        logger.info(new_uploaded_files)
-        response = extraction_model_service.execute(new_uploaded_files[0])
+        # logger.info("Extracting information from the uploaded file(s).")
+        # extraction_model_service = PdfInformationExtractionService()
+        # response = extraction_model_service.execute(new_uploaded_files[0])
 
-        return {"File(s) saved successfully. Extraction running in background": response}
+        return new_uploaded_files
     except Exception as e:
         logger.error(f"Error processing file: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")

@@ -1,6 +1,7 @@
 import yaml
 from abc import ABC
 from google import genai
+from pydantic import BaseModel
 
 
 from app.settings import get_settings
@@ -39,7 +40,7 @@ class InformationExtractionModelService(ModelService):
         return self.client.files.upload(file=file_path)
 
 
-    def execute(self, content: str, *args) -> str:
+    def execute(self, content: str, recipe: BaseModel) -> str:
         """
         Extract information using the model.
 
@@ -48,6 +49,11 @@ class InformationExtractionModelService(ModelService):
         """
         response = self.client.models.generate_content(
             model=self.model_name,
-            contents=[self.system_prompt, self.user_prompt, content]
+            contents=[self.system_prompt, self.user_prompt, content],
+            config = {
+                "response_mime_type": "application/json",
+                "response_schema": list[recipe],
+                'max_output_tokens': 8192,
+            }
         )
         return response

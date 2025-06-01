@@ -19,13 +19,21 @@ class FigureRecipe(BaseModel):
     caption_of_figure: str
     figure_description: str
 
-class ExtractedInformationRecipe(BaseModel):
+class PdfContentDataRecipe(BaseModel):
+    references: list[ReferenceRecipe]
+    sections: list[SectionRecipe]
+
+class TablesAndFiguresRecipe(BaseModel):
+    tables: list[TableRecipe]
+    figures: list[FigureRecipe]
+
+class PdfMetaDataRecipe(BaseModel):
     title: str
     authors: list[str]
     publication_date: str
     abstract: str
-    references: list[ReferenceRecipe]
-    sections: list[SectionRecipe]
-    tables: list[TableRecipe]
-    figures: list[FigureRecipe]
-    other_information: str
+
+class PdfInformationRecipe(BaseModel):
+    metadata: PdfMetaDataRecipe
+    content_data: PdfContentDataRecipe
+    tables_and_figures: TablesAndFiguresRecipe
