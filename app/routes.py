@@ -8,7 +8,7 @@ from fastapi import (
     File,
 )
 
-from app.services.file_processor import UploadPdfService
+from app.services.upload_pdf_service import UploadPdfService
 from app.services.pdf_information_extraction_service import PdfInformationExtractionService
 
 router = APIRouter()
@@ -40,15 +40,13 @@ def pdf_upload(file: UploadFile = File(...)):
         if new_uploaded_files is None or len(new_uploaded_files) == 0:
             logger.error("No valid PDF files found in the uploaded file.")
             raise ValueError("No valid PDF files found in the uploaded file.")
+        logger.info(f"Successfully uploaded {len(new_uploaded_files)} file(s).")
 
+        # Process the uploaded files
+        pdf_information_extraction_service = PdfInformationExtractionService()
+        extracted_data = pdf_information_extraction_service.run(new_uploaded_files)
 
-
-        # Extract information using InformationExtractionModelService
-        # logger.info("Extracting information from the uploaded file(s).")
-        # extraction_model_service = PdfInformationExtractionService()
-        # response = extraction_model_service.execute(new_uploaded_files[0])
-
-        return new_uploaded_files
+        return extracted_data
     except Exception as e:
-        logger.error(f"Error processing file: {e}")
+        logger.error(f"Error while uploading/processing files: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")

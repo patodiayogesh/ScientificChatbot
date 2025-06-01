@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import json
+from pathlib import Path
 from app.services.model_service import InformationExtractionModelService
 from app.services.recipe import (
     PdfInformationRecipe,
@@ -16,9 +18,6 @@ class PdfInformationExtractionService:
     """
 
     def __init__(self):
-        """
-        Initializes the service with a PDF reader.
-        """
         # self.pdf_reader = PdfReader()  # Assuming PdfReader is a class that handles PDF reading to extract text, images, etc.
         self.recipes = {
             "metadata": PdfMetaDataRecipe,
@@ -29,25 +28,25 @@ class PdfInformationExtractionService:
         self.pdf_reader = InformationExtractionModelService()  # Using the model service for extraction
 
 
-    def execute(self, pdf_path):
+    async def execute(self, file_path: Path) -> PdfInformationRecipe:
         """
         Extracts text from the specified PDF file.
-
-        :param pdf_path: The path to the PDF file.
-        :return: Extracted text as a string.
+        :param file_path: The path to the PDF file.
+        :return PdfInformationRecipe: Extracted text.
         """
 
         # For simplicity, we are using one model for all information extraction.
         # In a real-world scenario, you might want to use different pre-processing steps, models, or configurations based on the type of PDF or the specific information you want to extract.
         # You can define your workflow here, such as pre-processing the PDF, extracting text, and then using the model to extract information.
-        cloud_uploaded_file = self.pdf_reader.upload_file(pdf_path)
+        logger.info(f"Starting extraction for file: {file_path}")
+        cloud_uploaded_file = self.pdf_reader.upload_file(file_path)
         # TODO: The below call can be made in parallel, but due to API restrictions, we are making it sequentially.
         recipe_data = {}
         try:
             for recipe_name, recipe in self.recipes.items():
                 recipe_info = self.pdf_reader.execute(cloud_uploaded_file,recipe = recipe).text
                 recipe_data[recipe_name] = recipe(**json.loads(recipe_info)[0])  # Convert the JSON string to the appropriate recipe model
-                logger.info(f"Extracted information using recipe {recipe.__name__}")
+                logger.info(f"Extracted information using recipe {recipe.__name__} for file: {file_path}")
         except Exception as e:
             logger.error(f"Error extracting complete information from PDF: {e}")
         finally:
@@ -56,3 +55,32 @@ class PdfInformationExtractionService:
                 return extracted_pdf_information
             else:
                 raise Exception("No information extracted from the PDF file.")
+
+    async def aexecute(self, file_path: Path):
+        """
+        Asynchronously extracts information from the specified PDF file.
+        :param file_path: The path to the PDF file.
+        """
+        return await self.execute(file_path)
+
+
+    async def arun(self, uploadedFiles: list[Path]) -> list[PdfInformationRecipe]:
+        """
+        Runs the extraction process asynchronously for a list of uploaded files.
+        :param uploadedFiles: A list of paths to the uploaded PDF files.
+        :return list[PdfInformationRecipe]: A list of extracted information from the PDF files.
+        """
+        logger.info(f"Starting asynchronous extraction for {uploadedFiles}")
+        tasks = [asyncio.create_task(self.aexecute(file)) for file in uploadedFiles]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        logger.info("Completed parallel execution for all files.")
+        return results
+
+    def run(self, uploadedFiles: list[Path])-> list[PdfInformationRecipe]:
+        """
+        Function to call asynchronous function to process all files parallely.
+        :param uploadedFiles: A list of paths to the uploaded PDF files.
+        :return list[PdfInformationRecipe]: A list of extracted information from the PDF files.
+        """
+        return asyncio.run(self.arun(uploadedFiles))
+
