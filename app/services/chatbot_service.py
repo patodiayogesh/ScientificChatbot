@@ -33,7 +33,7 @@ class ChatbotService:
             description="An agent to interact with the google cloud firebase database and retrieve information.",
             model_name=settings.DB_AGENT_MODEL,  # Replace with actual model name
             prompt=self.load_prompt_from_file(settings.DB_AGENT_PROMPT_FILE_PATH),  # Load prompt from file
-            tools=None  # Define tools if needed
+            tools=[]  # Define tools if needed
         )
 
 

@@ -71,6 +71,7 @@ class Agent(AbstractAgent):
         else:
             self.tools_message = "Tools: None"
 
+    @track("agent.invoke")
     def invoke(self, query: str, context: str = None):
         """
         Invoke the agent with a query and optional context.
@@ -80,20 +81,18 @@ class Agent(AbstractAgent):
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=[self.prompt_messages, query, context, self.tools_message],
-                config = {
-                    "response_mime_type": "application/json",
-                    "response_schema": {
-                        "thought": {"type": "string"},
-                        "tool": {"type": "string", "nullable": True},
-                        "args": {"type": "object", "nullable": True},
-                        "response": {"type": "string", "nullable": True},
-                    }
-                }
             )
-            return response if response.content else None
+            if not response or not response.candidates:
+                logger.error("No response from the model.")
+                return None
         except Exception as e:
             logger.error(f"Error invoking agent: {e}")
             raise ValueError(f"Error invoking agent: {e}")
+        try:
+            return response.candidates[0].content.parts[0].text
+        except Exception as e:
+            logger.error(f"Error processing model response: {e}")
+            raise ValueError(f"Error processing model response: {e}")
 
     def invoke_tool(self, llm_response: str):
         """
@@ -101,33 +100,32 @@ class Agent(AbstractAgent):
         This method checks if the LLM response contains a tool invocation and executes it.
         """
         try:
+            print(type(llm_response), llm_response)
             response_data = json.loads(llm_response)
-            if isinstance(response_data, dict) and "tool_to_use" in response_data:
+            logger.info(response_data)
+            if isinstance(response_data, dict) and "tool" in response_data:
                 tool_name = response_data["tool"]
                 tool_args = response_data.get("args", {})
                 tool_to_run = self.tools.get(tool_name.lower())
                 if not tool_to_run:
                     return f"Tool '{tool_name}' not found in available tools."
-                return tool_to_run.execute(**tool_args)
+                return f"Tool Response: {tool_to_run.execute(**tool_args)}"
             else:
-                return llm_response  # No tool invocation, return the LLM's answer
+                return f"AI Response: {llm_response}"  # No tool invocation, return the LLM's answer
         except Exception as e:
             logger.error(f"Error invoking tool: {e}")
             raise ValueError(f"Error invoking tool: {e}")
 
     @track("agent.execute")
-    def execute(self, query: str, context: str = "None"):
+    def execute(self, query: str):
         """
         LLM decides whether to use a tool. The LLM is prompted with the query and available tools.
         If the LLM response contains a tool invocation, run the tool and return its result.
         Otherwise, return the LLM's answer.
         """
         logger.info(f"Executing agent: {self.name}")
-        logger.info(f"Query: {query}")
-        logger.info(f"Context: {context}")
-        logger.info(f"Prompt Messages: {self.prompt_messages}")
-        logger.info(f"Tools Messages: {self.tools_message}")
-        llm_response = self.invoke(query, context)
+        query = "Query: " + query
+        llm_response = self.invoke(query, context=self.context)
         if not llm_response:
             return "No response from the model."
         logger.info("LLM response received, checking for tool invocation.")
