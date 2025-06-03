@@ -42,7 +42,8 @@ class DatabaseService:
             raise ValueError(f"Error adding documents to the database: {e}")
 
     def get_document(self):
-        pass
+        collection_ref = self.db.collection(self.collection_name)
+
 
 
 

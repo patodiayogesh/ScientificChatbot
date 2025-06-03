@@ -39,4 +39,10 @@ system:
   }
   <</response_format>>
   "
+firestore_db_schema:
+  "
+  <<schema>>
+  {db_schema}
+  <</schema>>
+  "
 

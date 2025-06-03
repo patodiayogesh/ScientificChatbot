@@ -3,6 +3,7 @@ from opik import track
 
 from app.services.agent import Agent
 from app.settings import get_settings
+from app.services.recipe import PdfInformationRecipe
 
 settings = get_settings()
 
@@ -26,13 +27,21 @@ class ChatbotService:
         except Exception as e:
             raise ValueError(f"Error loading prompt from file: {e}")
 
-    def load_agents(self):
+    def load_agents(self, db_schema: PdfInformationRecipe = None):
+
+        prompt = self.load_prompt_from_file(settings.DB_AGENT_PROMPT_FILE_PATH)
+        try:
+        if "firestore_db_schema"  in prompt:
+            prompt["firestore_db_schema"] = db_schema.model_json_schema()
+
+
+
 
         self.db_agent = Agent(
             name="Database Agent",
             description="An agent to interact with the google cloud firebase database and retrieve information.",
             model_name=settings.DB_AGENT_MODEL,  # Replace with actual model name
-            prompt=self.load_prompt_from_file(settings.DB_AGENT_PROMPT_FILE_PATH),  # Load prompt from file
+            prompt=,  # Load prompt from file
             tools=[]  # Define tools if needed
         )
 
