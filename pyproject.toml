@@ -13,4 +13,5 @@ dependencies = [
     "PyYaml",
     "firebase-admin",
     "google-cloud-firestore",
+    "opik"
 ]

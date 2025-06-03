@@ -3,6 +3,7 @@ import logging
 from fastapi import (
     APIRouter,
     Depends,
+    Form,
     HTTPException,
     UploadFile,
     File,
@@ -11,6 +12,7 @@ from fastapi import (
 from app.services.upload_pdf_service import UploadPdfService
 from app.services.pdf_information_extraction_service import PdfInformationExtractionService
 from app.services.db_service import get_firebase_db, DatabaseService
+from app.services.chatbot_service import ChatbotService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -55,3 +57,26 @@ def pdf_upload(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"Error while uploading/processing files: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+
+
+@router.post("/chatbot")
+def chatbot(query: str = Form(...)):
+    """
+    Endpoint to handle chatbot queries.
+    """
+    try:
+        logger.info(f"Received chatbot query: {query}")
+        if not query:
+            logger.error("Empty query received.")
+            raise HTTPException(status_code=400, detail="Query cannot be empty.")
+
+        db_service = DatabaseService()
+
+        service = ChatbotService()
+        response = service.get_response(query=query, db_service=db_service)
+
+        logger.info("Chatbot query processed successfully.")
+        return {"response": response}
+    except Exception as e:
+        logger.error(f"Error processing chatbot query: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")

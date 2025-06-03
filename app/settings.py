@@ -15,9 +15,14 @@ class Settings(BaseSettings):
     INFORMATION_EXTRACTION_MODEL: str = "gemini-2.0-flash"
     INFORMATION_EXTRACTION_PROMPT_FILE_PATH: str = "prompts/information_extraction.yaml"
 
+    DB_AGENT_MODEL: str = "gemini-2.0-flash"
+    DB_AGENT_PROMPT_FILE_PATH: str = "prompts/db_agent.yaml"
+
     API_KEY: str
     GOOGLE_APPLICATION_CREDENTIALS: str
     FIREBASE_COLLECTION_NAME: str
+    OPIK_API_KEY: str
+    OPIK_WORKSPACE: str
 
 @lru_cache
 def get_settings() -> Settings:
@@ -29,4 +34,7 @@ def get_settings() -> Settings:
     return Settings()
 
 def load_env():
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = get_settings().GOOGLE_APPLICATION_CREDENTIALS
+    settings = get_settings()
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS
+    os.environ["OPIK_API_KEY"] = settings.OPIK_API_KEY
+    os.environ["OPIK_WORKSPACE"] = settings.OPIK_WORKSPACE

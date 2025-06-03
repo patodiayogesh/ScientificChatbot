@@ -41,6 +41,9 @@ class DatabaseService:
         except Exception as e:
             raise ValueError(f"Error adding documents to the database: {e}")
 
+    def get_document(self):
+        pass
+
 
 
 def get_firebase_db():

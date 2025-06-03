@@ -10,9 +10,11 @@ from firebase_admin import credentials
 sys.path.append(str(Path(__file__).parent.parent))
 
 from app.routes import router
-from app.settings import get_settings
+from app.settings import get_settings, load_env
 
 settings = get_settings()
+load_env()
+
 
 # Configure logging
 logging.basicConfig(
