@@ -7,12 +7,14 @@ from pathlib import Path
 from fastapi import UploadFile
 
 from app.settings import get_settings
-from app.services.pdf_information_extraction_service import PdfInformationExtractionService
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
 class UploadPdfService:
+    """
+    Service for handling the upload and extraction of PDF files, including those within zip archives.
+    """
 
     def __init__(self):
         # Define the directory to save extracted files
@@ -20,6 +22,13 @@ class UploadPdfService:
         self.save_dir.mkdir(parents=True, exist_ok=True)
 
     async def _save_pdf(self, file):
+        """
+        Saves a single uploaded PDF file to the designated directory.
+
+        :param file: The uploaded PDF file (FastAPI UploadFile object).
+        :return: A list containing the path to the saved PDF file.
+        :raises Exception: If there is an error during the file saving process.
+        """
         try:
             pdf_path = self.save_dir / Path(file.filename)
             content = await file.read()
@@ -34,8 +43,9 @@ class UploadPdfService:
         """
         Extract PDF files from a zip file.
 
-        :param zip_file_path: Path to the zip file.
-        :return: List of paths to the extracted PDF files.
+        :param file: The uploaded zip file (FastAPI UploadFile object).
+        :return: A list of paths to the extracted PDF files.
+        :raises Exception: If there is an error during the zip file processing or extraction.
         """
         try:
             extracted_files = []
@@ -67,13 +77,12 @@ class UploadPdfService:
 
 
     def upload(self, file:UploadFile) -> list[Path]:
-
         """
-        Check if the file is a zipped file. If it is, extract the files and process each PDF file.
+        Check if the file is a zipped file. If it is, extract the files and save each PDF file.
         Save the files to a directory and return the directory path.
 
-        :param file:
-        :return:
+        :param file: The uploaded file (FastAPI UploadFile object).
+        :return: A list of paths to the saved PDF files.
         """
         if file.filename.endswith('.zip'):
             new_uploaded_files = asyncio.run(self._save_zipped_files(file))

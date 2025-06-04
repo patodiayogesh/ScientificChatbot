@@ -42,9 +42,6 @@ class PdfInformationRecipe(BaseModel):
     tables_and_figures: TablesAndFiguresRecipe
 
 if __name__ == "__main__":
-    # Example usage
     import json
     schema = PdfInformationRecipe.model_json_schema()
     print(json.dumps(schema, indent=4))
-
-    # Print the PDF information in JSON format

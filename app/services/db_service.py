@@ -5,7 +5,6 @@ from firebase_admin import credentials, firestore
 from app.settings import get_settings
 from app.services.recipe import (
     PdfInformationRecipe,
-    PdfMetaDataRecipe,
 )
 
 settings = get_settings()
@@ -41,13 +40,11 @@ class DatabaseService:
         except Exception as e:
             raise ValueError(f"Error adding documents to the database: {e}")
 
-    def get_document(self):
-        collection_ref = self.db.collection(self.collection_name)
-
-
-
 
 def get_firebase_db():
+    """
+    Function to set up credentials to connect to firebase db
+    """
     if not firebase_admin._apps:
         cred = credentials.Certificate(settings.GOOGLE_APPLICATION_CREDENTIALS)
         firebase_admin.initialize_app(cred)

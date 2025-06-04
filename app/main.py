@@ -4,8 +4,7 @@ import uvicorn
 
 from fastapi import FastAPI
 from pathlib import Path
-import firebase_admin
-from firebase_admin import credentials
+
 
 sys.path.append(str(Path(__file__).parent.parent))
 

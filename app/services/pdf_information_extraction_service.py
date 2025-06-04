@@ -2,6 +2,8 @@ import asyncio
 import logging
 import json
 from pathlib import Path
+from opik import track
+
 from app.services.model_service import InformationExtractionModelService
 from app.services.recipe import (
     PdfInformationRecipe,
@@ -15,14 +17,18 @@ logger = logging.getLogger(__name__)
 class PdfInformationExtractionService:
     """
     Service for extracting information from PDF files.
+    This service orchestrates the extraction of metadata, content, and tables/figures
+    from PDF documents using different recipes and a model service.
     """
 
     def __init__(self):
         # self.pdf_reader = PdfReader()  # Assuming PdfReader is a class that handles PDF reading to extract text, images, etc.
+        # Initialize the recipes to be used for information extraction.
+        # Each recipe defines the structure of the data to be extracted.
         self.recipes = {
             "metadata": PdfMetaDataRecipe,
-            # "content_data": PdfContentDataRecipe,
-            # "tables_and_figures": TablesAndFiguresRecipe
+            #"content_data": PdfContentDataRecipe,
+            "tables_and_figures": TablesAndFiguresRecipe
         }
         self.pdf_information_recipe = PdfInformationRecipe  # Using the recipe for structured information extraction
         self.pdf_reader = InformationExtractionModelService()  # Using the model service for extraction
@@ -48,11 +54,13 @@ class PdfInformationExtractionService:
             logger.error(f"Error modifying recipe format: {e}")
             raise ValueError("Invalid recipe data format. Please check the extracted data format.")
 
+    @track(name="pdf_information_extraction_service.execute")
     async def execute(self, file_path: Path) -> PdfInformationRecipe:
         """
-        Extracts text from the specified PDF file.
+        Extracts text/information from the specified PDF file.
+        Can be modified to include multiple APIs/Services to extract information.
         :param file_path: The path to the PDF file.
-        :return PdfInformationRecipe: Extracted text.
+        :return PdfInformationRecipe: Extracted information.
         """
 
         # For simplicity, we are using one model for all information extraction.
@@ -78,19 +86,19 @@ class PdfInformationExtractionService:
             extracted_pdf_information = PdfInformationRecipe.model_construct(**new_recipe_data)
             return extracted_pdf_information
 
-
-
     async def aexecute(self, file_path: Path):
         """
         Asynchronously extracts information from the specified PDF file.
+        Wrapper around the execute method to allow for asynchronous execution.
+
         :param file_path: The path to the PDF file.
         """
         return await self.execute(file_path)
 
-
+    @track(name="pdf_information_extraction_service.arun")
     async def arun(self, uploadedFiles: list[Path]) -> list[PdfInformationRecipe]:
         """
-        Runs the extraction process asynchronously for a list of uploaded files.
+        Runs the extraction process asynchronously and in parallel for a list of uploaded files.
         :param uploadedFiles: A list of paths to the uploaded PDF files.
         :return list[PdfInformationRecipe]: A list of extracted information from the PDF files.
         """
@@ -100,9 +108,11 @@ class PdfInformationExtractionService:
         logger.info("Completed parallel execution for all files.")
         return results
 
+    @track(name="pdf_information_extraction_service.run")
     def run(self, uploadedFiles: list[Path])-> list[PdfInformationRecipe]:
         """
         Function to call asynchronous function to process all files parallely.
+        Entry point for running the information extraction process synchronously.
         :param uploadedFiles: A list of paths to the uploaded PDF files.
         :return list[PdfInformationRecipe]: A list of extracted information from the PDF files.
         """

@@ -2,6 +2,7 @@ import yaml
 from abc import ABC
 from google import genai
 from pydantic import BaseModel
+from opik import track
 
 
 from app.settings import get_settings
@@ -39,7 +40,7 @@ class InformationExtractionModelService(ModelService):
         """
         return self.client.files.upload(file=file_path)
 
-
+    @track(name="information_extraction_model_service.execute")
     def execute(self, content: str, recipe: BaseModel) -> str:
         """
         Extract information using the model.

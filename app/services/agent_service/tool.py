@@ -1,6 +1,9 @@
 import json
 
 class ToolParameter:
+    """
+    A class to define metadata for a tool's input parameter.
+    """
     def __init__(self, description: str, type: str, required: bool = True, allowed_values: list = None):
         self.description = description
         self.type = type
@@ -8,6 +11,9 @@ class ToolParameter:
         self.allowed_values = allowed_values if allowed_values is not None else []
 
 class Tool:
+    """
+    A tool that can be executed dynamically with parameters and a function
+    """
     def __init__(self, name: str, description: str, function: callable,
                  parameters: dict[str: ToolParameter] = None):
         self.name = name
@@ -27,7 +33,7 @@ class Tool:
 
     def execute(self, *args, **kwargs):
         """
-        Execute the tool's function with the provided arguments.
+        Execute the tool's function with the provided arguments and returns any runtime errors
         """
         try:
             return self.function(*args, **kwargs)
