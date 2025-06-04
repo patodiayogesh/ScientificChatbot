@@ -66,10 +66,10 @@ class Agent(AbstractAgent):
             raise ValueError(f"Error loading prompt: {e}")
 
         if self.tools:
-            self.tools_message = "Tools: " + json.dumps([tool.to_dict() for tool in self.tools.values()],
+            self.tools_message = "Available Tools: " + json.dumps([tool.to_dict() for tool in self.tools.values()],
                                                         indent=2, ensure_ascii=False)
         else:
-            self.tools_message = "Tools: None"
+            self.tools_message = "Available Tools: None"
 
     @track("agent.invoke")
     def invoke(self, query: str, context: str = None):
@@ -80,7 +80,7 @@ class Agent(AbstractAgent):
         try:
             response = self.client.models.generate_content(
                 model=self.model_name,
-                contents=[self.prompt_messages, query, context, self.tools_message],
+                contents=[self.prompt_messages, query, self.tools_message, context],
             )
             if not response or not response.candidates:
                 logger.error("No response from the model.")
@@ -94,30 +94,91 @@ class Agent(AbstractAgent):
             logger.error(f"Error processing model response: {e}")
             raise ValueError(f"Error processing model response: {e}")
 
-    def invoke_tool(self, llm_response: str):
+    def load_json_from_model_response(self, llm_response: str):
+        """
+        Load JSON data from the LLM response.
+        This method attempts to parse the LLM response as JSON.
+        """
+        try:
+            return json.loads(llm_response)
+        except Exception as e:
+            logger.error(f"Error decoding json string: {e}")
+            if llm_response.startswith("```json"):
+                llm_response = llm_response[7:-3]
+                return json.loads(llm_response)
+            if llm_response.startswith("```"):
+                llm_response = llm_response[3:-3]
+                return json.loads(llm_response)
+
+
+    @track("agent.invoke_tool")
+    def invoke_tool(self, response_data: str):
         """
         Invoke a tool based on the LLM response.
         This method checks if the LLM response contains a tool invocation and executes it.
         """
         try:
-            print(type(llm_response), llm_response)
-            response_data = json.loads(llm_response)
-            logger.info(response_data)
             if isinstance(response_data, dict) and "tool" in response_data:
                 tool_name = response_data["tool"]
                 tool_args = response_data.get("args", {})
                 tool_to_run = self.tools.get(tool_name.lower())
                 if not tool_to_run:
                     return f"Tool '{tool_name}' not found in available tools."
-                return f"Tool Response: {tool_to_run.execute(**tool_args)}"
+                logger.info(f"Invoking tool: {tool_name} with args: {tool_args}")
+                return f"Tool Output: {tool_to_run.execute(**tool_args)}"
             else:
-                return f"AI Response: {llm_response}"  # No tool invocation, return the LLM's answer
+                return ""
         except Exception as e:
             logger.error(f"Error invoking tool: {e}")
             raise ValueError(f"Error invoking tool: {e}")
 
+    @track("agent.invoke_code")
+    def invoke_code(self, response_data: str):
+        """
+        Execute code using the GenAI client.
+        This method is a placeholder for executing code snippets.
+        """
+        try:
+            logger.info(f"Invoking code execution with response data")
+            if "code_snippet" in response_data:
+                code_snippet = response_data["code_snippet"]
+                if code_snippet.startswith("```python"):
+                    code_snippet = code_snippet[9:-3]
+                elif code_snippet.startswith("```"):
+                    code_snippet = code_snippet[3:-3]
+                logger.info(f"Executing code snippet")
+                local_vars = {}
+                exec(code_snippet, {}, local_vars)
+                code_output = local_vars["result"]
+                return f"Code Output: {code_output}"
+        except Exception as e:
+            return f"Code Output: Error parsing/executing code snippet: {e}"
+
+    @track("agent.execute_with_context")
+    def execute_with_context(self, query:str):
+        """
+        Execute the agent with a query and optional context.
+        This method is a wrapper around the execute method to handle context.
+        """
+
+        llm_response = self.invoke(query, context=self.context)
+        if not llm_response:
+            return "No response from the model."
+        if isinstance(llm_response, str):
+            self.context += f"AI Response: {llm_response}\n"
+        logger.info("LLM response received, checking for tool invocation.")
+        llm_response_json = self.load_json_from_model_response(llm_response)
+        tool_output = self.invoke_tool(llm_response_json)
+        if tool_output and isinstance(tool_output, str):
+            self.context += f"{tool_output}\n"
+        code_output = self.invoke_code(llm_response_json)
+        if code_output and isinstance(code_output, str):
+            self.context += f"{code_output}\n"
+        return llm_response_json
+
+
     @track("agent.execute")
-    def execute(self, query: str):
+    def execute(self, query: str, MAX_LOOPS: int = 3):
         """
         LLM decides whether to use a tool. The LLM is prompted with the query and available tools.
         If the LLM response contains a tool invocation, run the tool and return its result.
@@ -125,14 +186,19 @@ class Agent(AbstractAgent):
         """
         logger.info(f"Executing agent: {self.name}")
         query = "Query: " + query
-        llm_response = self.invoke(query, context=self.context)
-        if not llm_response:
-            return "No response from the model."
-        logger.info("LLM response received, checking for tool invocation.")
-        llm_response = self.invoke_tool(llm_response)
-        if type(llm_response) == str:
-            self.context += llm_response
-        return llm_response
+        while(MAX_LOOPS>0):
+            llm_response_json = self.execute_with_context(query)
+            try:
+                if llm_response_json["no_further_operations"] == True or llm_response_json[
+                    "no_further_operations"] == "true":
+                    logger.info("No further operations requested by the LLM.")
+                    break
+            except Exception as e:
+                logger.error("no_further_operations not found in LLM response, continuing execution.")
+                self.context += "User Message: Error checking for no_further_operations in LLM response.\n"
+            MAX_LOOPS -= 1
 
-
-
+        if "response" not in llm_response_json:
+            logger.error("No response found in LLM response.")
+            return "No response generated by the agent."
+        return llm_response_json["response"]

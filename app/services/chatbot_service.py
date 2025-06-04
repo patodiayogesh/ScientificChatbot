@@ -1,17 +1,21 @@
 import yaml
+import json
+import logging
 from opik import track
-
+from opik.integrations.genai import track_genai
 from app.services.agent import Agent
 from app.settings import get_settings
 from app.services.recipe import PdfInformationRecipe
+from app.services.tools.agent_tools import UrlFetchFirebaseDBPythonExamplesTool
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
+
 
 class ChatbotService:
     def __init__(self):
 
         self.agent = None
-        self.load_agents()
 
     def load_prompt_from_file(self, file_path: str):
         """
@@ -31,18 +35,19 @@ class ChatbotService:
 
         prompt = self.load_prompt_from_file(settings.DB_AGENT_PROMPT_FILE_PATH)
         try:
-        if "firestore_db_schema"  in prompt:
-            prompt["firestore_db_schema"] = db_schema.model_json_schema()
-
-
-
+            if "firestore_db_schema"  in prompt:
+                prompt["firestore_db_schema"] = json.dumps(db_schema.model_json_schema())
+        except Exception as e:
+            logger.info(f"Error loading firestore db schema: {e}")
 
         self.db_agent = Agent(
             name="Database Agent",
             description="An agent to interact with the google cloud firebase database and retrieve information.",
             model_name=settings.DB_AGENT_MODEL,  # Replace with actual model name
-            prompt=,  # Load prompt from file
-            tools=[]  # Define tools if needed
+            prompt=prompt,  # Load prompt from file
+            tools={
+                "fetch_firebase_db_python_examples": UrlFetchFirebaseDBPythonExamplesTool()
+            }  # Define tools if needed
         )
 
 
@@ -54,8 +59,7 @@ class ChatbotService:
         if not query:
             raise ValueError("Query cannot be empty.")
 
-        if db_service is None:
-            raise ValueError("Database service is required to get a response.")
+        self.load_agents(PdfInformationRecipe)
 
         # Get the response from the chatbot
         response = self.db_agent.execute(query)
