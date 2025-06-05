@@ -12,3 +12,12 @@ Content-Type: application/pdf
 
 < ./example.pdf
 --boundary--
+
+### Chatbot Endpoint
+POST http://localhost:8000/chatbot
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "Compare papers X and Y"
+}

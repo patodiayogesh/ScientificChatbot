@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     INFORMATION_VALIDATION_AGENT_PROMPT_FILE_PATH: str = "prompts/information_validation_agent.yaml"
     SUPER_AGENT_MODEL: str = "gemini-2.0-flash"
     SUPER_AGENT_PROMPT_FILE_PATH: str = "prompts/super_agent.yaml"
+    MAX_LOOPS: int = 3
 
     API_KEY: str
     GOOGLE_APPLICATION_CREDENTIALS: str
