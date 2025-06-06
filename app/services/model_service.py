@@ -1,3 +1,4 @@
+import asyncio
 import yaml
 from abc import ABC
 from google import genai
@@ -40,21 +41,25 @@ class InformationExtractionModelService(ModelService):
         """
         return self.client.files.upload(file=file_path)
 
+
     @track(name="information_extraction_model_service.execute")
-    def execute(self, content: str, recipe: BaseModel) -> str:
+    async def execute(self, content: str, recipe: BaseModel) -> str:
         """
         Extract information using the model.
 
         :param prompt: The prompt to send to the model.
         :return: The model's response.
         """
-        response = self.client.models.generate_content(
-            model=self.model_name,
-            contents=[self.system_prompt, self.user_prompt, content],
-            config = {
-                "response_mime_type": "application/json",
-                "response_schema": list[recipe],
-                'max_output_tokens': 8192,
-            }
-        )
-        return response
+        def call_model():
+            return self.client.models.generate_content(
+                model=self.model_name,
+                contents=[self.system_prompt, self.user_prompt, content],
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": list[recipe],
+                    "max_output_tokens": 8192,
+                }
+            )
+        # Because Google's generate_content is I/O blocking it defeats parallel calls
+        # This moves the blocking call to a separate thread, letting the event loop continue scheduling other tasks
+        return await asyncio.to_thread(call_model)

@@ -163,6 +163,7 @@ Handles file saving, ZIP extraction, and cleaning up unwanted system artifacts (
    - The response is parsed and validated into the appropriate schema.
 3. All extracted components are combined into a unified `PdfInformationRecipe` model.
 4. Final structured output includes extracted metadata, figures, tables, and any additional information recipes defined.
+5. The documents and calls are made in parallel allowing fast execution.
 
 ## Chatbot Agent System Overview
 This chatbot system is designed around a modular agent architecture leveraging language models (LLMs) to provide intelligent, multi-step query handling with tool and code execution capabilities.
@@ -174,8 +175,8 @@ This chatbot system is designed around a modular agent architecture leveraging l
 
 ### Agents
 - **db_agent:** `Agent` that generates code (refers internet if necessary), executes code and retrieves documents from Firestore based on schema fields (supports nested fields).
-- **information_validation_agent:**  `Agent` that validates and refines extracted or retrieved information.
-- **super_agent:** `SuperAgent` that orchestrates the above agents, deciding which to invoke for a given query.
+- **information_validation_agent:**  `Agent` that validates extracted or retrieved information.
+- **super_agent:** `SuperAgent` that orchestrates the above agents, deciding which to invoke for a given query. Generates response based on query and retrieved information.
 
 ### Tools
 The chatbot supports a flexible tool framework allowing dynamic execution of external utilities to enhance the agent's capabilities.
@@ -233,6 +234,7 @@ The system will:
 5. The super_agent will identify whether validator agent needs to be called or if response can be returned.
 6. If validator agent is called, the agent will check for completeness.
 7. If validator identifies information is incomplete, super agent will automatically orchestrate the usage of db_agent again if necessary.
+8. If the validator states information is complete, super agent will then generate a response based on user query and retrieved information.
 8. If no further operations/improvements can be performed, the response will be sent back to the user.
 
 ## Customization

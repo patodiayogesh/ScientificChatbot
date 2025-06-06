@@ -54,6 +54,14 @@ class PdfInformationExtractionService:
             logger.error(f"Error modifying recipe format: {e}")
             raise ValueError("Invalid recipe data format. Please check the extracted data format.")
 
+    @track("pdf_information_extraction_service.extract_recipe")
+    async def extract_recipe(self, file, recipe_name, recipe):
+        try:
+            recipe_info = await self.pdf_reader.execute(file, recipe=recipe)
+            return recipe_name, recipe(**json.loads(recipe_info.text)[0])
+        except Exception as e:
+            logger.error(f"Error extracting {recipe_name} for {file}: {e}")
+
     @track(name="pdf_information_extraction_service.execute")
     async def execute(self, file_path: Path) -> PdfInformationRecipe:
         """
@@ -68,23 +76,16 @@ class PdfInformationExtractionService:
         # You can define your workflow here, such as pre-processing the PDF, extracting text, and then using the model to extract information.
         logger.info(f"Starting extraction for file: {file_path}")
         cloud_uploaded_file = self.pdf_reader.upload_file(file_path)
-        # TODO: The below call can be made in parallel, but due to API restrictions, we are making it sequentially.
-        recipe_data = {}
-        try:
-            for recipe_name, recipe in self.recipes.items():
-                recipe_info = self.pdf_reader.execute(cloud_uploaded_file,recipe = recipe).text
-                recipe_data[recipe_name] = recipe(**json.loads(recipe_info)[0])  # Convert the JSON string to the appropriate recipe model
-                logger.info(f"Extracted information using recipe {recipe.__name__} for file: {file_path}")
-        except Exception as e:
-            logger.error(f"Error extracting complete information from PDF: {e}")
-        finally:
-            if not recipe_data:
-                raise Exception("No information extracted from the PDF file.")
-            if "metadata" not in recipe_data:
-                raise Exception("Metadata extraction failed. Please check the PDF file format or content.")
-            new_recipe_data = self.modify_recipe_format(recipe_data)
-            extracted_pdf_information = PdfInformationRecipe.model_construct(**new_recipe_data)
-            return extracted_pdf_information
+        tasks = [self.extract_recipe(cloud_uploaded_file, recipe_name, recipe) for recipe_name, recipe in self.recipes.items()]
+        results = await asyncio.gather(*tasks)
+        recipe_data = {name: data for name, data in results if data is not None}
+        if not recipe_data:
+            raise Exception("No information extracted from the PDF file.")
+        if "metadata" not in recipe_data:
+            raise Exception("Metadata extraction failed. Please check the PDF file format or content.")
+        new_recipe_data = self.modify_recipe_format(recipe_data)
+        extracted_pdf_information = PdfInformationRecipe.model_construct(**new_recipe_data)
+        return extracted_pdf_information
 
     async def aexecute(self, file_path: Path):
         """
@@ -93,7 +94,8 @@ class PdfInformationExtractionService:
 
         :param file_path: The path to the PDF file.
         """
-        return await self.execute(file_path)
+        extracted_pdf_information = await self.execute(file_path)
+        return extracted_pdf_information
 
     @track(name="pdf_information_extraction_service.arun")
     async def arun(self, uploadedFiles: list[Path]) -> list[PdfInformationRecipe]:
@@ -103,7 +105,7 @@ class PdfInformationExtractionService:
         :return list[PdfInformationRecipe]: A list of extracted information from the PDF files.
         """
         logger.info(f"Starting asynchronous extraction for {uploadedFiles}")
-        tasks = [asyncio.create_task(self.aexecute(file)) for file in uploadedFiles]
+        tasks = [self.aexecute(file) for file in uploadedFiles]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         logger.info("Completed parallel execution for all files.")
         return results

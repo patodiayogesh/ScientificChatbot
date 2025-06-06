@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     FIREBASE_COLLECTION_NAME: str
     OPIK_API_KEY: str
     OPIK_WORKSPACE: str
+    OPIK_PROJECT_NAME: str
 
 @lru_cache
 def get_settings() -> Settings:
@@ -43,3 +44,4 @@ def load_env():
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS
     os.environ["OPIK_API_KEY"] = settings.OPIK_API_KEY
     os.environ["OPIK_WORKSPACE"] = settings.OPIK_WORKSPACE
+    os.environ["OPIK_PROJECT_NAME"] = settings.OPIK_PROJECT_NAME
