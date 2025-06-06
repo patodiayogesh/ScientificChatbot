@@ -245,6 +245,7 @@ The system will:
 
 ## Current limitations and Future Work
 Due to the constraint of time, the above solution has been built to allow addition of multiple components for future updates.
+
 **PDF Information Extraction**
   - Currently, the service depends entirely on Generative LLM for extraction which is costly. 
   - Specialized python packages (PyPDF) can be used for reading pdf to extract all the sections. 
@@ -255,6 +256,7 @@ Due to the constraint of time, the above solution has been built to allow additi
   - Chunking and iterative or hierarchical solution should be built if LLMs are to be used.
   - As Generative LLMs are being used for extraction, if the output length is above max_tokens, an incomplete response is obtained.
   - To resolve the above: a solution can be built to input context and previous response, requesting model to generate the remaining text and then join those texts.
+
 **Chatbot Agent System**
   - DB Agent is being used to generate code. 
   - A repository of functions can be created as tools, and passed as input to model (as tools) for function selection along with parameters, reducing chances of error.
